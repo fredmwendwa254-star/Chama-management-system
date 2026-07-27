@@ -1,11 +1,12 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Lock, User, Mail, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, Mail, Phone, Eye, EyeOff } from 'lucide-react';
 
 export default function Register() {
     const [fullName, setFullName] = useState('');
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -22,8 +23,14 @@ export default function Register() {
         setSuccess('');
 
         // Validation
-        if (!fullName || !username || !password || !confirmPassword) {
+        if (!fullName || !email || !phone || !password || !confirmPassword) {
             setError('All fields are required');
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setError('Please enter a valid email address');
             return;
         }
 
@@ -46,7 +53,8 @@ export default function Register() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    username,
+                    email,
+                    phone,
                     password,
                     role: 'member',
                     fullName
@@ -66,8 +74,7 @@ export default function Register() {
                 setSuccess('Account created successfully! Logging you in...');
                 // Auto login after registration
                 setTimeout(() => {
-                    // Login with the new account
-                    handleAutoLogin(username, password);
+                    handleAutoLogin(email, password);
                 }, 1000);
             } else {
                 setError(data.msg || 'Registration failed');
@@ -80,14 +87,14 @@ export default function Register() {
         }
     };
 
-    const handleAutoLogin = async (uname, pwd) => {
+    const handleAutoLogin = async (emailOrPhone, pwd) => {
         try {
             const res = await fetch('http://localhost:3000/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ username: uname, password: pwd })
+                body: JSON.stringify({ emailOrPhone, password: pwd })
             });
 
             const data = await res.json();
@@ -103,12 +110,14 @@ export default function Register() {
     };
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-            <div className="glass" style={{ padding: '3rem', width: '100%', maxWidth: '400px' }}>
-                <h2 className="text-gradient" style={{ textAlign: 'center', marginBottom: '2rem', fontSize: '2rem' }}>Create Account</h2>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 110px)', padding: '2rem 1rem' }}>
+            <div className="glass" style={{ padding: 'clamp(1.75rem, 5vw, 3rem)', width: '100%', maxWidth: '440px' }}>
+                <p className="eyebrow" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Start your contribution journey</p>
+                <h2 className="text-gradient" style={{ textAlign: 'center', marginBottom: '0.65rem', fontSize: '2.35rem' }}>Create Account</h2>
+                <p className="muted" style={{ textAlign: 'center', marginBottom: '2rem' }}>Fill in your details to register as a chama member.</p>
 
-                {error && <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem', textAlign: 'center' }}>{error}</div>}
-                {success && <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: 'var(--success)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem', textAlign: 'center' }}>{success}</div>}
+                {error && <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem', textAlign: 'center', fontSize: '0.9rem' }}>{error}</div>}
+                {success && <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: 'var(--success)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem', textAlign: 'center', fontSize: '0.9rem' }}>{success}</div>}
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     {/* Full Name */}
@@ -119,41 +128,37 @@ export default function Register() {
                             placeholder="Full Name (e.g. Fred Mwendwa)"
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '0.75rem 1rem 0.75rem 3rem',
-                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '0.5rem',
-                                color: 'var(--text-primary)',
-                                fontSize: '1rem',
-                                boxSizing: 'border-box'
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
-                            onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                            className="glass-input"
+                            style={{ paddingLeft: '3rem' }}
+                            required
                         />
                     </div>
 
-                    {/* Username */}
+                    {/* Email */}
                     <div className="input-nudge">
-                        <User style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={20} />
+                        <Mail style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={20} />
                         <input
-                            type="text"
-                            placeholder="Username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '0.75rem 1rem 0.75rem 3rem',
-                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '0.5rem',
-                                color: 'var(--text-primary)',
-                                fontSize: '1rem',
-                                boxSizing: 'border-box'
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
-                            onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                            type="email"
+                            placeholder="Email Address (e.g. fred@example.com)"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="glass-input"
+                            style={{ paddingLeft: '3rem' }}
+                            required
+                        />
+                    </div>
+
+                    {/* Phone Number */}
+                    <div className="input-nudge">
+                        <Phone style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={20} />
+                        <input
+                            type="tel"
+                            placeholder="Phone Number (e.g. 0712345678)"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="glass-input"
+                            style={{ paddingLeft: '3rem' }}
+                            required
                         />
                     </div>
 
@@ -162,21 +167,12 @@ export default function Register() {
                         <Lock style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={20} />
                         <input
                             type={showPassword ? 'text' : 'password'}
-                            placeholder="Password"
+                            placeholder="Password (min 6 characters)"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '0.75rem 3rem 0.75rem 3rem',
-                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '0.5rem',
-                                color: 'var(--text-primary)',
-                                fontSize: '1rem',
-                                boxSizing: 'border-box'
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
-                            onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                            className="glass-input"
+                            style={{ paddingLeft: '3rem', paddingRight: '3rem' }}
+                            required
                         />
                         <button
                             type="button"
@@ -204,18 +200,9 @@ export default function Register() {
                             placeholder="Confirm Password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '0.75rem 3rem 0.75rem 3rem',
-                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '0.5rem',
-                                color: 'var(--text-primary)',
-                                fontSize: '1rem',
-                                boxSizing: 'border-box'
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
-                            onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                            className="glass-input"
+                            style={{ paddingLeft: '3rem', paddingRight: '3rem' }}
+                            required
                         />
                         <button
                             type="button"
@@ -238,19 +225,14 @@ export default function Register() {
                     <button
                         type="submit"
                         disabled={loading}
+                        className="btn"
                         style={{
-                            padding: '0.75rem',
-                            backgroundColor: loading ? 'rgba(139, 92, 246, 0.5)' : 'var(--primary)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '0.5rem',
-                            fontSize: '1rem',
-                            fontWeight: '600',
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.3s ease'
+                            marginTop: '0.5rem',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            opacity: loading ? 0.7 : 1
                         }}
-                        onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = 'var(--primary-dark)')}
-                        onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = 'var(--primary)')}
                     >
                         {loading ? 'Creating Account...' : 'Create Account'}
                     </button>

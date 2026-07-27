@@ -10,8 +10,10 @@ export default function AdminDashboard() {
     const [allUsers, setAllUsers] = useState([]);
     const [memberStatus, setMemberStatus] = useState({ paidMembers: [], unpaidMembers: [] });
     const [withdrawals, setWithdrawals] = useState([]);
+    const [deposits, setDeposits] = useState([]);
     const [auditLogs, setAuditLogs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [withdrawalAmount, setWithdrawalAmount] = useState('');
 
     const paidMembers = memberStatus.paidMembers;
     const unpaidMembers = memberStatus.unpaidMembers;
@@ -36,6 +38,10 @@ export default function AdminDashboard() {
             const withdrawalsRes = await fetch('http://localhost:3000/api/withdrawals', { headers });
             if (withdrawalsRes.ok) setWithdrawals(await withdrawalsRes.json());
 
+            // Fetch deposits
+            const depositsRes = await fetch('http://localhost:3000/api/deposits', { headers });
+            if (depositsRes.ok) setDeposits(await depositsRes.json());
+
             // Fetch audit logs
             const auditRes = await fetch('http://localhost:3000/api/audit', { headers });
             if (auditRes.ok) setAuditLogs(await auditRes.json());
@@ -56,14 +62,53 @@ export default function AdminDashboard() {
         return () => socket.disconnect();
     }, [token]);
 
-    const handleApprove = async (id) => {
+    const handleApproveDeposit = async (id) => {
         try {
-            const res = await fetch(`http://localhost:3000/api/withdrawals/${id}/approve`, {
+            const res = await fetch(`http://localhost:3000/api/deposits/${id}/approve`, {
                 method: 'PUT',
                 headers: { 'x-auth-token': token }
             });
             if (res.ok) {
                 fetchData();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleRejectDeposit = async (id) => {
+        try {
+            const res = await fetch(`http://localhost:3000/api/deposits/${id}/reject`, {
+                method: 'PUT',
+                headers: { 'x-auth-token': token }
+            });
+            if (res.ok) {
+                fetchData();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleWithdrawalSubmit = async (e) => {
+        e.preventDefault();
+        if (!withdrawalAmount || isNaN(withdrawalAmount)) return;
+        try {
+            const res = await fetch('http://localhost:3000/api/withdrawals', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token
+                },
+                body: JSON.stringify({ amount: parseFloat(withdrawalAmount) })
+            });
+
+            if (res.ok) {
+                setWithdrawalAmount('');
+                fetchData();
+            } else {
+                const data = await res.json();
+                alert(data.msg || 'Withdrawal failed');
             }
         } catch (err) {
             console.error(err);
@@ -100,57 +145,105 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* System Reset Action */}
-            <div className="glass" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-                <h3 style={{ marginBottom: '1rem' }}>System Controls</h3>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                    Reset the deposited and withdrawn amounts across the system back to zero. Use only when you want to clear the ledger for a new cycle.
-                </p>
-                <button
-                    onClick={async () => {
-                        if (!window.confirm('Reset all deposit and withdrawal amounts to zero? This cannot be undone.')) return;
-                        try {
-                            const res = await fetch('http://localhost:3000/api/dashboard/reset', {
-                                method: 'POST',
-                                headers: { 'x-auth-token': token }
-                            });
-                            if (res.ok) {
-                                fetchData();
+            {/* Admin Controls */}
+            <div className="two-column-grid" style={{ marginBottom: '2.5rem' }}>
+                {/* Initiate Withdrawal Form */}
+                <div className="glass" style={{ padding: '1.5rem' }}>
+                    <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <TrendingUp size={20} style={{ color: 'var(--warning)' }} /> Execute Withdrawal
+                    </h3>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                        Withdraw funds directly from the group pool. The amount will be immediately deducted from the total capital.
+                    </p>
+                    <form onSubmit={handleWithdrawalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <input
+                            type="number"
+                            placeholder="Withdrawal Amount"
+                            step="0.01"
+                            className="glass-input"
+                            value={withdrawalAmount}
+                            onChange={(e) => setWithdrawalAmount(e.target.value)}
+                            required
+                        />
+                        <button type="submit" className="btn" style={{ backgroundColor: 'var(--warning)' }}>
+                            Execute Withdrawal
+                        </button>
+                    </form>
+                </div>
+
+                {/* System Reset Action */}
+                <div className="glass" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                        <h3 style={{ marginBottom: '1rem' }}>System Controls</h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                            Reset the deposited and withdrawn amounts across the system back to zero. Use only when you want to clear the ledger for a new cycle.
+                        </p>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            if (!window.confirm('Reset all deposit and withdrawal amounts to zero? This cannot be undone.')) return;
+                            try {
+                                const res = await fetch('http://localhost:3000/api/dashboard/reset', {
+                                    method: 'POST',
+                                    headers: { 'x-auth-token': token }
+                                });
+                                if (res.ok) {
+                                    fetchData();
+                                }
+                            } catch (err) {
+                                console.error(err);
                             }
-                        } catch (err) {
-                            console.error(err);
-                        }
-                    }}
-                    className="btn"
-                    style={{ backgroundColor: '#e11d48', borderColor: '#e11d48', color: '#fff' }}
-                >
-                    Reset System Amounts
-                </button>
+                        }}
+                        className="btn"
+                        style={{ backgroundColor: '#e11d48', borderColor: '#e11d48', color: '#fff', alignSelf: 'flex-start' }}
+                    >
+                        Reset System Amounts
+                    </button>
+                </div>
             </div>
 
             {/* Main Content Grid */}
             <div className="two-column-grid" style={{ marginBottom: '2rem' }}>
-                {/* Pending Withdrawals */}
+                {/* Pending Deposits Panel */}
                 <div className="glass" style={{ padding: '1.5rem' }}>
                     <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Clock size={20} style={{ color: 'var(--warning)' }} /> Pending Withdrawals
+                        <Clock size={20} style={{ color: 'var(--warning)' }} /> Pending Deposits
                     </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {withdrawals.filter(w => w.status === 'pending').length === 0 ? (
-                            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>No pending withdrawals.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '500px', overflowY: 'auto' }}>
+                        {deposits.filter(d => d.status === 'pending').length === 0 ? (
+                            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>No pending deposits.</p>
                         ) : (
-                            withdrawals.filter(w => w.status === 'pending').map(w => (
-                                <div key={w.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: 'rgba(245, 158, 11, 0.1)', borderLeft: '3px solid var(--warning)', borderRadius: '0.5rem' }}>
-                                    <div>
-                                        <strong>User ID: {w.user_id}</strong>
-                                        <br />
-                                        <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--warning)' }}>{formatShillings(w.amount)}</span>
-                                        <br />
-                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{new Date(w.created_at).toLocaleString()}</span>
+                            deposits.filter(d => d.status === 'pending').map(d => (
+                                <div key={d.id} style={{ padding: '1rem', backgroundColor: 'rgba(245, 158, 11, 0.05)', borderLeft: '3px solid var(--warning)', borderRadius: '0.5rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div>
+                                            <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>{d.full_name}</strong>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{d.email} • {d.phone || 'No phone'}</div>
+                                            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--warning)', marginTop: '0.4rem' }}>{formatShillings(d.amount)}</div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                                Ref: <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>{d.transaction_ref}</span>
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                                Initiated: {new Date(d.created_at).toLocaleString()}
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            <button
+                                                onClick={() => handleApproveDeposit(d.id)}
+                                                className="btn"
+                                                style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem', backgroundColor: 'var(--success)', whiteSpace: 'nowrap' }}
+                                            >
+                                                Approve
+                                            </button>
+                                            <button
+                                                onClick={() => handleRejectDeposit(d.id)}
+                                                className="btn"
+                                                style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem', backgroundColor: 'var(--danger)', whiteSpace: 'nowrap' }}
+                                            >
+                                                Reject
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button onClick={() => handleApprove(w.id)} className="btn" style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <CheckCircle size={18} /> Approve
-                                    </button>
                                 </div>
                             ))
                         )}
@@ -176,10 +269,14 @@ export default function AdminDashboard() {
                                     paidMembers.map((u) => (
                                         <div key={u.id} style={{ padding: '0.75rem', backgroundColor: 'rgba(34, 197, 94, 0.12)', borderLeft: '3px solid var(--success)', borderRadius: '0.35rem' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <strong>{u.username}</strong>
+                                                <strong>{u.full_name}</strong>
                                                 <span style={{ color: 'var(--success)', fontWeight: 600 }}>Paid</span>
                                             </div>
                                             <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                Email: {u.email}
+                                                <br />
+                                                Phone: {u.phone}
+                                                <br />
                                                 Deposited: {formatShillings(u.total_deposits)}
                                                 <br />
                                                 Withdrawn: {formatShillings(u.total_withdrawals)}
@@ -205,10 +302,14 @@ export default function AdminDashboard() {
                                     unpaidMembers.map((u) => (
                                         <div key={u.id} style={{ padding: '0.75rem', backgroundColor: 'rgba(248, 113, 113, 0.12)', borderLeft: '3px solid var(--danger)', borderRadius: '0.35rem' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <strong>{u.username}</strong>
+                                                <strong>{u.full_name}</strong>
                                                 <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Unpaid</span>
                                             </div>
                                             <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                Email: {u.email}
+                                                <br />
+                                                Phone: {u.phone}
+                                                <br />
                                                 Deposited: {formatShillings(u.total_deposits)}
                                                 <br />
                                                 Withdrawn: {formatShillings(u.total_withdrawals)}

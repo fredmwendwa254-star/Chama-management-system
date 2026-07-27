@@ -13,20 +13,20 @@ router.get('/stats', auth, async (req, res) => {
 
         if (req.user.role === 'admin') {
             const depResult = await pool.query(
-                'SELECT COALESCE(SUM(amount), 0) as total_deposits FROM deposits WHERE status = \'completed\''
+                "SELECT COALESCE(SUM(amount), 0) as total_deposits FROM deposits WHERE status = 'approved'"
             );
             const withResult = await pool.query(
-                'SELECT COALESCE(SUM(amount), 0) as total_withdrawals FROM withdrawals WHERE status = \'approved\''
+                "SELECT COALESCE(SUM(amount), 0) as total_withdrawals FROM withdrawals WHERE status = 'approved'"
             );
             totalDeposits = parseFloat(depResult.rows[0].total_deposits);
             totalWithdrawals = parseFloat(withResult.rows[0].total_withdrawals);
         } else {
             const depResult = await pool.query(
-                'SELECT COALESCE(SUM(amount), 0) as total_deposits FROM deposits WHERE status = \'completed\' AND user_id = $1',
+                "SELECT COALESCE(SUM(amount), 0) as total_deposits FROM deposits WHERE status = 'approved' AND user_id = $1",
                 [req.user.id]
             );
             const withResult = await pool.query(
-                'SELECT COALESCE(SUM(amount), 0) as total_withdrawals FROM withdrawals WHERE status = \'approved\' AND user_id = $1',
+                "SELECT COALESCE(SUM(amount), 0) as total_withdrawals FROM withdrawals WHERE status = 'approved' AND user_id = $1",
                 [req.user.id]
             );
             totalDeposits = parseFloat(depResult.rows[0].total_deposits);
@@ -58,7 +58,7 @@ router.get('/monthly', auth, async (req, res) => {
             ), deposits AS (
                 SELECT EXTRACT(MONTH FROM created_at)::int AS month, COALESCE(SUM(amount), 0) AS amount
                 FROM deposits
-                WHERE status = 'completed' AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM CURRENT_DATE) ${userFilter}
+                WHERE status = 'approved' AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM CURRENT_DATE) ${userFilter}
                 GROUP BY 1
             ), withdrawals AS (
                 SELECT EXTRACT(MONTH FROM created_at)::int AS month, COALESCE(SUM(amount), 0) AS amount
@@ -73,7 +73,7 @@ router.get('/monthly', auth, async (req, res) => {
             LEFT JOIN deposits ON deposits.month = months.month
             LEFT JOIN withdrawals ON withdrawals.month = months.month
             ORDER BY months.month` ,
-            req.user.role === 'admin' ? [] : [req.user.id]
+            params
         );
 
         res.json(result.rows);
@@ -87,17 +87,18 @@ router.get('/monthly', auth, async (req, res) => {
 // @desc    Reset all deposit and withdrawal amounts in the system (Admin only)
 router.post('/reset', [auth, admin], async (req, res) => {
     try {
-        await pool.query('UPDATE deposits SET amount = 0');
-        await pool.query('UPDATE withdrawals SET amount = 0');
+        await pool.query("UPDATE deposits SET status = 'rejected' WHERE status = 'pending'");
+        await pool.query("DELETE FROM deposits");
+        await pool.query("DELETE FROM withdrawals");
 
-        const desc = 'Admin reset all system deposit and withdrawal amounts to zero';
+        const desc = 'Admin reset all system deposit and withdrawal history';
         await pool.query('INSERT INTO audit_logs (action, user_id, description) VALUES ($1, $2, $3)', [
             'SYSTEM_RESET',
             req.user.id,
             desc
         ]);
 
-        res.json({ msg: 'System amounts reset successfully' });
+        res.json({ msg: 'System history reset successfully' });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

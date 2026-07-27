@@ -1,11 +1,10 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Lock, User, Eye, EyeOff, UsersRound } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
-    const [fullName, setFullName] = useState('');
-    const [username, setUsername] = useState('');
+    const [emailOrPhone, setEmailOrPhone] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
@@ -22,7 +21,7 @@ export default function Login() {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ username, password, fullName })
+                body: JSON.stringify({ emailOrPhone, password })
             });
 
             // Parse JSON if present, otherwise read plaintext body
@@ -37,7 +36,12 @@ export default function Login() {
 
             if (res.ok) {
                 login(data.token, data.user);
-                navigate('/dashboard'); // Routing simple for demo
+                // Redirect based on role
+                if (data.user.role === 'admin') {
+                    navigate('/admin');
+                } else {
+                    navigate('/dashboard');
+                }
             } else {
                 setError(data.msg || 'Login failed');
             }
@@ -54,30 +58,18 @@ export default function Login() {
                 <h2 className="text-gradient" style={{ textAlign: 'center', marginBottom: '0.65rem', fontSize: '2.35rem' }}>Welcome back</h2>
                 <p className="muted" style={{ textAlign: 'center', marginBottom: '2rem' }}>Manage your contributions with clarity.</p>
 
-                {error && <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem', textAlign: 'center' }}>{error}</div>}
+                {error && <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem', textAlign: 'center', fontSize: '0.9rem' }}>{error}</div>}
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div className="input-nudge">
-                        <UsersRound style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={20} />
+                        <Mail style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={20} />
                         <input
                             type="text"
                             className="glass-input"
                             style={{ paddingLeft: '3rem' }}
-                            placeholder="Full name (e.g. Fred Mwendwa)"
-                            value={fullName}
-                            onChange={e => setFullName(e.target.value)}
-                            autoComplete="name"
-                        />
-                    </div>
-                    <div className="input-nudge">
-                        <User style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={20} />
-                        <input
-                            type="text"
-                            className="glass-input"
-                            style={{ paddingLeft: '3rem' }}
-                            placeholder="Username (e.g. Alabama)"
-                            value={username}
-                            onChange={e => setUsername(e.target.value)}
+                            placeholder="Email or Phone Number"
+                            value={emailOrPhone}
+                            onChange={e => setEmailOrPhone(e.target.value)}
                             required
                         />
                     </div>

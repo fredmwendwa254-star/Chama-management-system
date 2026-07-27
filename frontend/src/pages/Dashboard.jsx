@@ -10,7 +10,6 @@ export default function Dashboard() {
     const [deposits, setDeposits] = useState([]);
     const [withdrawals, setWithdrawals] = useState([]);
     const [notifications, setNotifications] = useState([]);
-    const [withdrawAmount, setWithdrawAmount] = useState('');
     const [depositAmount, setDepositAmount] = useState('');
     const [depositRef, setDepositRef] = useState('');
     const [monthly, setMonthly] = useState([]);
@@ -72,32 +71,6 @@ export default function Dashboard() {
             } else {
                 const error = await res.json();
                 setNotifications(prev => [error.msg || 'Deposit failed', ...prev]);
-            }
-        } catch (err) {
-            console.error(err);
-            setNotifications(prev => ['Server error', ...prev]);
-        }
-    };
-
-    const requestWithdrawal = async (e) => {
-        e.preventDefault();
-        if (!withdrawAmount || isNaN(withdrawAmount)) {
-            setNotifications(prev => ['Please enter a valid amount', ...prev]);
-            return;
-        }
-        try {
-            const res = await fetch('http://localhost:3000/api/withdrawals', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
-                body: JSON.stringify({ amount: parseFloat(withdrawAmount) })
-            });
-            if (res.ok) {
-                setNotifications(prev => [`Withdrawal of ${formatShillings(withdrawAmount)} requested. Awaiting Admin approval.`, ...prev]);
-                setWithdrawAmount('');
-                fetchData();
-            } else {
-                const error = await res.json();
-                setNotifications(prev => [error.msg || 'Withdrawal request failed', ...prev]);
             }
         } catch (err) {
             console.error(err);
@@ -197,28 +170,25 @@ export default function Dashboard() {
                     </form>
                 </div>
 
-                {/* Withdrawal Form */}
+                {/* Contribution Guide Card */}
                 <div className="glass" style={{ padding: '2rem' }}>
                     <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <ArrowUpRight size={20} style={{ color: 'var(--warning)' }} /> Request Withdrawal
+                        <ArrowUpRight size={20} style={{ color: 'var(--primary)' }} /> Contribution Guidelines
                     </h3>
-                    <form onSubmit={requestWithdrawal} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <input
-                            type="number"
-                            placeholder="Amount"
-                            step="0.01"
-                            className="glass-input"
-                            value={withdrawAmount}
-                            onChange={e => setWithdrawAmount(e.target.value)}
-                            required
-                        />
-                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                            Available: {formatShillings(stats.currentBalance)}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                        <p>
+                            All deposits are submitted to a <strong style={{ color: 'var(--warning)' }}>pending</strong> state and must be verified and approved by an Administrator.
                         </p>
-                        <button type="submit" className="btn" style={{ backgroundColor: 'var(--warning)' }}>
-                            <Send size={18} /> Request Withdrawal
-                        </button>
-                    </form>
+                        <p>
+                            To ensure proper tracking, make sure you enter the correct <strong>transaction reference</strong> (e.g. M-Pesa, bank receipt, or transaction code).
+                        </p>
+                        <p>
+                            Only <strong style={{ color: 'var(--success)' }}>approved</strong> transactions are reflected in group records and your available balance.
+                        </p>
+                        <p>
+                            Withdrawals are executed only by group Administrators for accountability. Contact your admin to request group funds.
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -233,17 +203,42 @@ export default function Dashboard() {
                         {deposits.length === 0 ? (
                             <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>No deposits yet</p>
                         ) : (
-                            deposits.map(d => (
-                                <div key={d.id} style={{ padding: '0.75rem', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderLeft: '3px solid var(--success)', borderRadius: '0.25rem', fontSize: '0.9rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>{formatShillings(d.amount)}</span>
-                                        <span style={{ color: 'var(--text-secondary)' }}>{d.status}</span>
+                            deposits.map(d => {
+                                let statusBg = 'rgba(245, 158, 11, 0.05)';
+                                let statusBorder = '3px solid var(--warning)';
+                                let statusTextColor = 'var(--warning)';
+
+                                if (d.status === 'approved') {
+                                    statusBg = 'rgba(34, 197, 94, 0.05)';
+                                    statusBorder = '3px solid var(--success)';
+                                    statusTextColor = 'var(--success)';
+                                } else if (d.status === 'rejected') {
+                                    statusBg = 'rgba(239, 68, 68, 0.05)';
+                                    statusBorder = '3px solid var(--danger)';
+                                    statusTextColor = 'var(--danger)';
+                                }
+
+                                return (
+                                    <div key={d.id} style={{ padding: '0.75rem', backgroundColor: statusBg, borderLeft: statusBorder, borderRadius: '0.25rem', fontSize: '0.9rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontWeight: 600 }}>{formatShillings(d.amount)}</span>
+                                            <span style={{
+                                                fontSize: '0.75rem',
+                                                textTransform: 'uppercase',
+                                                fontWeight: 700,
+                                                color: statusTextColor,
+                                                padding: '0.15rem 0.4rem',
+                                                borderRadius: '0.25rem',
+                                                border: `1px solid ${statusTextColor}`
+                                            }}>{d.status}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                                            <span>Ref: {d.transaction_ref}</span>
+                                            <span>{new Date(d.created_at).toLocaleDateString()}</span>
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                        {new Date(d.created_at).toLocaleDateString()}
-                                    </div>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </div>
@@ -258,10 +253,10 @@ export default function Dashboard() {
                             <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>No withdrawals yet</p>
                         ) : (
                             withdrawals.map(w => (
-                                <div key={w.id} style={{ padding: '0.75rem', backgroundColor: 'rgba(245, 158, 11, 0.1)', borderLeft: '3px solid var(--warning)', borderRadius: '0.25rem', fontSize: '0.9rem' }}>
+                                <div key={w.id} style={{ padding: '0.75rem', backgroundColor: 'rgba(245, 158, 11, 0.05)', borderLeft: '3px solid var(--warning)', borderRadius: '0.25rem', fontSize: '0.9rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span>{formatShillings(w.amount)}</span>
-                                        <span style={{ color: w.status === 'pending' ? 'var(--warning)' : w.status === 'approved' ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
+                                        <span style={{ color: 'var(--success)', fontWeight: 600 }}>
                                             {w.status}
                                         </span>
                                     </div>

@@ -11,11 +11,12 @@ router.get('/', [auth, admin], async (req, res) => {
         const users = await pool.query(`
             SELECT
                 u.id,
-                u.username,
+                u.email,
+                u.phone,
                 u.role,
                 u.full_name,
                 u.created_at,
-                COALESCE((SELECT SUM(amount) FROM deposits WHERE user_id = u.id AND status = 'completed'), 0) AS total_deposits,
+                COALESCE((SELECT SUM(amount) FROM deposits WHERE user_id = u.id AND status = 'approved'), 0) AS total_deposits,
                 COALESCE((SELECT SUM(amount) FROM withdrawals WHERE user_id = u.id AND status = 'approved'), 0) AS total_withdrawals
             FROM users u
             ORDER BY u.created_at DESC
@@ -46,11 +47,12 @@ router.get('/status', [auth, admin], async (req, res) => {
         const users = await pool.query(`
             SELECT
                 u.id,
-                u.username,
+                u.email,
+                u.phone,
                 u.role,
                 u.full_name,
                 u.created_at,
-                COALESCE((SELECT SUM(amount) FROM deposits WHERE user_id = u.id AND status = 'completed'), 0) AS total_deposits,
+                COALESCE((SELECT SUM(amount) FROM deposits WHERE user_id = u.id AND status = 'approved'), 0) AS total_deposits,
                 COALESCE((SELECT SUM(amount) FROM withdrawals WHERE user_id = u.id AND status = 'approved'), 0) AS total_withdrawals
             FROM users u
             ORDER BY u.created_at DESC

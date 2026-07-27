@@ -9,7 +9,7 @@ const admin = require('../middleware/admin');
 router.get('/', [auth, admin], async (req, res) => {
     try {
         const logs = await pool.query(`
-      SELECT a.id, a.action, a.description, a.created_at, u.username as actor 
+      SELECT a.id, a.action, a.description, a.created_at, u.full_name as actor 
       FROM audit_logs a 
       LEFT JOIN users u ON a.user_id = u.id 
       ORDER BY a.created_at DESC
