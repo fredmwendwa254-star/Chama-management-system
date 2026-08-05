@@ -3,6 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import { ShieldAlert, CheckCircle, Clock, Users, TrendingUp } from 'lucide-react';
 import { formatShillings } from '../utils/currency';
+import { API_URL, SOCKET_URL } from '../config';
 
 export default function AdminDashboard() {
     const { user, token } = useContext(AuthContext);
@@ -23,27 +24,27 @@ export default function AdminDashboard() {
             const headers = { 'x-auth-token': token };
 
             // Fetch stats
-            const statsRes = await fetch('http://localhost:3000/api/dashboard/stats', { headers });
+            const statsRes = await fetch(`${API_URL}/dashboard/stats`, { headers });
             if (statsRes.ok) setStats(await statsRes.json());
 
             // Fetch all users
-            const usersRes = await fetch('http://localhost:3000/api/users', { headers });
+            const usersRes = await fetch(`${API_URL}/users`, { headers });
             if (usersRes.ok) setAllUsers(await usersRes.json());
 
             // Fetch member payment status
-            const statusRes = await fetch('http://localhost:3000/api/users/status', { headers });
+            const statusRes = await fetch(`${API_URL}/users/status`, { headers });
             if (statusRes.ok) setMemberStatus(await statusRes.json());
 
             // Fetch withdrawals
-            const withdrawalsRes = await fetch('http://localhost:3000/api/withdrawals', { headers });
+            const withdrawalsRes = await fetch(`${API_URL}/withdrawals`, { headers });
             if (withdrawalsRes.ok) setWithdrawals(await withdrawalsRes.json());
 
             // Fetch deposits
-            const depositsRes = await fetch('http://localhost:3000/api/deposits', { headers });
+            const depositsRes = await fetch(`${API_URL}/deposits`, { headers });
             if (depositsRes.ok) setDeposits(await depositsRes.json());
 
             // Fetch audit logs
-            const auditRes = await fetch('http://localhost:3000/api/audit', { headers });
+            const auditRes = await fetch(`${API_URL}/audit`, { headers });
             if (auditRes.ok) setAuditLogs(await auditRes.json());
 
             setLoading(false);
@@ -55,7 +56,7 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         fetchData();
-        const socket = io('http://localhost:3000');
+        const socket = io(SOCKET_URL);
         socket.on('new_deposit', () => fetchData());
         socket.on('withdrawal_approved', () => fetchData());
 
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
 
     const handleApproveDeposit = async (id) => {
         try {
-            const res = await fetch(`http://localhost:3000/api/deposits/${id}/approve`, {
+            const res = await fetch(`${API_URL}/deposits/${id}/approve`, {
                 method: 'PUT',
                 headers: { 'x-auth-token': token }
             });
@@ -78,7 +79,7 @@ export default function AdminDashboard() {
 
     const handleRejectDeposit = async (id) => {
         try {
-            const res = await fetch(`http://localhost:3000/api/deposits/${id}/reject`, {
+            const res = await fetch(`${API_URL}/deposits/${id}/reject`, {
                 method: 'PUT',
                 headers: { 'x-auth-token': token }
             });
@@ -94,7 +95,7 @@ export default function AdminDashboard() {
         e.preventDefault();
         if (!withdrawalAmount || isNaN(withdrawalAmount)) return;
         try {
-            const res = await fetch('http://localhost:3000/api/withdrawals', {
+            const res = await fetch(`${API_URL}/withdrawals`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -183,7 +184,7 @@ export default function AdminDashboard() {
                         onClick={async () => {
                             if (!window.confirm('Reset all deposit and withdrawal amounts to zero? This cannot be undone.')) return;
                             try {
-                                const res = await fetch('http://localhost:3000/api/dashboard/reset', {
+                                const res = await fetch(`${API_URL}/dashboard/reset`, {
                                     method: 'POST',
                                     headers: { 'x-auth-token': token }
                                 });

@@ -45,9 +45,18 @@ io.on('connection', (socket) => {
     });
 });
 
-app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to the Chama Financial Platform API (Real-time Enabled)!' });
-});
+// Serve static frontend in production
+const path = require('path');
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+    });
+} else {
+    app.get('/', (req, res) => {
+        res.json({ message: 'Welcome to the Chama Financial Platform API (Real-time Enabled)!' });
+    });
+}
 
 // Start the server
 server.listen(port, () => {

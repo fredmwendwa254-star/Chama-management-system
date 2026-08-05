@@ -2,6 +2,7 @@ import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { API_URL } from '../config';
 
 export default function Login() {
     const [emailOrPhone, setEmailOrPhone] = useState('');
@@ -16,7 +17,7 @@ export default function Login() {
         setError('');
 
         try {
-            const res = await fetch('http://localhost:3000/api/auth/login', {
+            const res = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -47,7 +48,7 @@ export default function Login() {
             }
         } catch (err) {
             console.error('Login connection error:', err);
-            setError('Cannot connect to backend server. Please verify the server is running on port 3000.');
+            setError('Cannot connect to backend server. Please verify your connection and server status.');
         }
     };
 

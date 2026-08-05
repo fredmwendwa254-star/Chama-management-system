@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import { Wallet, ArrowUpRight, ArrowDownRight, Activity, BadgeAlert, Send, PlusCircle, TrendingDown, TrendingUp, BarChart3 } from 'lucide-react';
+import { API_URL, SOCKET_URL } from '../config';
 import { formatShillings } from '../utils/currency';
 
 export default function Dashboard() {
@@ -19,18 +20,18 @@ export default function Dashboard() {
             const headers = { 'x-auth-token': token };
 
             // Fetch stats
-            const statsRes = await fetch('http://localhost:3000/api/dashboard/stats', { headers });
+            const statsRes = await fetch(`${API_URL}/dashboard/stats`, { headers });
             if (statsRes.ok) setStats(await statsRes.json());
 
             // Fetch deposits
-            const depositsRes = await fetch('http://localhost:3000/api/deposits', { headers });
+            const depositsRes = await fetch(`${API_URL}/deposits`, { headers });
             if (depositsRes.ok) setDeposits(await depositsRes.json());
 
             // Fetch withdrawals
-            const withdrawalsRes = await fetch('http://localhost:3000/api/withdrawals', { headers });
+            const withdrawalsRes = await fetch(`${API_URL}/withdrawals`, { headers });
             if (withdrawalsRes.ok) setWithdrawals(await withdrawalsRes.json());
 
-            const monthlyRes = await fetch('http://localhost:3000/api/dashboard/monthly', { headers });
+            const monthlyRes = await fetch(`${API_URL}/dashboard/monthly`, { headers });
             if (monthlyRes.ok) setMonthly(await monthlyRes.json());
         } catch (err) {
             console.error(err);
@@ -39,7 +40,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         fetchData();
-        const socket = io('http://localhost:3000');
+        const socket = io(SOCKET_URL);
         socket.on('new_deposit', (data) => {
             setNotifications(prev => [data.msg, ...prev]);
             fetchData();
@@ -58,7 +59,7 @@ export default function Dashboard() {
             return;
         }
         try {
-            const res = await fetch('http://localhost:3000/api/deposits', {
+            const res = await fetch(`${API_URL}/deposits`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
                 body: JSON.stringify({ amount: parseFloat(depositAmount), transaction_ref: depositRef })

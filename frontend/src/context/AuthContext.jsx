@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
+import { API_URL } from '../config';
 
 export const AuthContext = createContext();
 
@@ -11,7 +12,7 @@ export const AuthProvider = ({ children }) => {
         const checkUser = async () => {
             if (token) {
                 try {
-                    const res = await fetch('http://localhost:3000/api/auth/me', {
+                    const res = await fetch(`${API_URL}/auth/me`, {
                         headers: { 'x-auth-token': token }
                     });
                     if (res.ok) {

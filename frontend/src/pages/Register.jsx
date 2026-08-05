@@ -2,6 +2,7 @@ import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Lock, User, Mail, Phone, Eye, EyeOff } from 'lucide-react';
+import { API_URL } from '../config';
 
 export default function Register() {
     const [fullName, setFullName] = useState('');
@@ -47,7 +48,7 @@ export default function Register() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:3000/api/auth/register', {
+            const res = await fetch(`${API_URL}/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -89,7 +90,7 @@ export default function Register() {
 
     const handleAutoLogin = async (emailOrPhone, pwd) => {
         try {
-            const res = await fetch('http://localhost:3000/api/auth/login', {
+            const res = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

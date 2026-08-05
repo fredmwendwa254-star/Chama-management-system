@@ -13,17 +13,17 @@
 }
 
 :root[data-theme='dark'] {
-  --bg-color: #122322;
-  --text-primary: #edf8f1;
-  --text-secondary: #a8c0b7;
-  --primary: #55c7a6;
-  --primary-hover: #38aa8c;
-  --card-bg: rgba(27, 51, 47, 0.94);
-  --border-color: #31564d;
-  --success: #55c793;
-  --warning: #e2b45c;
-  --danger: #ef8585;
-  --accent: #e9c875;
+  --bg-color: #0d1117;
+  --text-primary: #e6edf3;
+  --text-secondary: #7d8590;
+  --primary: #2dd4bf;
+  --primary-hover: #14b8a6;
+  --card-bg: rgba(22, 27, 34, 0.65);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --success: #3fb950;
+  --warning: #d29922;
+  --danger: #f85149;
+  --accent: #58a6ff;
 }
 
 * {
@@ -47,7 +47,9 @@ body {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 0.75rem;
-  box-shadow: 0 12px 30px rgba(25, 49, 47, 0.07);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .glass-input {
