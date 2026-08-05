@@ -6,6 +6,7 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
+
 const io = new Server(server, {
     cors: {
         origin: '*',
@@ -13,22 +14,22 @@ const io = new Server(server, {
     }
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Make Socket.io accessible to routes
+// Attach socket to requests
 app.use((req, res, next) => {
     req.io = io;
     next();
 });
 
-// Import Database Configuration
+// DB
 require('./src/config/db');
 
-// Define Routes
+// Routes
 app.use('/api/auth', require('./src/routes/auth'));
 app.use('/api/deposits', require('./src/routes/deposits'));
 app.use('/api/withdrawals', require('./src/routes/withdrawals'));
@@ -36,29 +37,32 @@ app.use('/api/users', require('./src/routes/users'));
 app.use('/api/audit', require('./src/routes/audit'));
 app.use('/api/dashboard', require('./src/routes/dashboard'));
 
-// Socket.io Real-time Connections
+// Socket
 io.on('connection', (socket) => {
-    console.log('New client connected via WebSocket:', socket.id);
-
+    console.log('Socket connected:', socket.id);
     socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
+        console.log('Socket disconnected:', socket.id);
     });
 });
 
-// Serve static frontend in production
+// Static frontend
 const path = require('path');
+
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
-    app.get('*', (req, res) => {
+
+    // ✅ FIXED (Express v5 safe wildcard)
+    app.get(/.*/, (req, res) => {
         res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
     });
+
 } else {
     app.get('/', (req, res) => {
-        res.json({ message: 'Welcome to the Chama Financial Platform API (Real-time Enabled)!' });
+        res.json({ message: 'API running...' });
     });
 }
 
-// Start the server
+// Start server
 server.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`Server running on port ${port}`);
 });
