@@ -7,14 +7,16 @@ const { Server } = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
 const io = new Server(server, {
     cors: {
-        origin: '*',
+        origin: process.env.NODE_ENV === 'production' ? FRONTEND_URL : '*',
         methods: ['GET', 'POST', 'PUT', 'DELETE']
     }
 });
 
-const port = process.env.PORT || 10000;
+const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
@@ -48,15 +50,11 @@ io.on('connection', (socket) => {
 // Static frontend
 const path = require('path');
 
-if (process.env.NODE_ENV === 'production') {
-    app.get('/', (req, res) => {
-        res.json({ message: 'API running in production 🚀' });
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Chama Financial Platform API is running'
     });
-} else {
-    app.get('/', (req, res) => {
-        res.json({ message: 'API running...' });
-    });
-}
+});
 
 // Start server
 server.listen(port, () => {
